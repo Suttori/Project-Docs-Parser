@@ -42,6 +42,7 @@ function extractTables(document) {
 }
 
 
+
 function parseSchedule(table) {
   if (!table || table.length < 2) {
     return []
@@ -68,41 +69,21 @@ function parseSchedule(table) {
   // Пн-Пт
   const weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт']
 
-  // Нормализация имени.
-  // Приводит разные виды апострофов и пробелов к одному виду.
-
-function normalizeName(name) {
-  return name
-    .normalize('NFKC')
-    .replace(/[\u0027\u0060\u00B4\u02BC\u055A\u2018\u2019\u201B\u2032\uFF07]/g, "'")
-    .replace(/\u00A0/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLocaleLowerCase('uk-UA')
-}
-
-function normalizeNameKey(name) {
-  return name
-    .normalize('NFKC')
-    .replace(/[\u0027\u0060\u00B4\u02BC\u055A\u2018\u2019\u201B\u2032\uFF07]/g, "'")
-    .replace(/\u00A0/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLocaleLowerCase('uk-UA')
-}
-
-const personKey = normalizeNameKey(name)
-
-if (!people[personKey]) {
-  people[personKey] = {
-    name, // сохраняем оригинальное написание
-    days: {},
-    weeklyEarnings: 0,
+  // Нормализация имени для сравнения.
+  // Разные апострофы, пробелы и регистр
+  // приводятся к одному виду.
+  function normalizeNameKey(name) {
+    return name
+      .normalize('NFKC')
+      .replace(
+        /[\u0027\u0060\u00B4\u02BC\u055A\u2018\u2019\u201B\u2032\uFF07]/g,
+        "'"
+      )
+      .replace(/\u00A0/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLocaleLowerCase('uk-UA')
   }
-}
-
-
-
 
   // Пропускаем первую строку — это заголовки таблицы
   for (let rowIndex = 1; rowIndex < table.length; rowIndex++) {
@@ -170,46 +151,24 @@ if (!people[personKey]) {
           Мар’яна
         */
 
-        // Сначала удаляем всё после ID сотрудника.
-        // Из:
-        // "Мар’яна (335) TG+online"
-        //
-        // получаем:
-        // "Мар’яна"
+        // Убираем всё после ID сотрудника
         const match = line.match(/^(.+?)\s*\(\d+\)/)
 
         let name
 
         if (match) {
-          name = match[1]
+          name = match[1].trim()
         } else {
-          name = line
+          name = line.trim()
         }
-
-        // Нормализуем имя
-        name = normalizeName(name)
 
         if (!name) {
           continue
         }
 
-        /*
-          Нормализованное имя используется как ключ.
-
-          Например:
-
-          Мар’яна
-          Мар'яна
-          Мар’яна
-          Мар’яна
-
-          после normalizeName() становятся:
-
-          Мар'яна
-
-          Поэтому они попадут в одного человека.
-        */
-        const personKey = name
+        // Ключ используется только для объединения людей.
+        // Само отображаемое имя остаётся оригинальным.
+        const personKey = normalizeNameKey(name)
 
         // Если человека ещё нет — создаём
         if (!people[personKey]) {
@@ -246,14 +205,22 @@ if (!people[personKey]) {
   }
 
   // Сортировка:
-  // сначала Мар'яна, затем остальные по заработку
+  // сначала Мар’яна/Мар'яна,
+  // затем остальные по заработку
   return Object.values(people).sort((a, b) => {
-    if (a.name === "Мар'яна") return -1
-    if (b.name === "Мар'яна") return 1
+    const aKey = normalizeNameKey(a.name)
+    const bKey = normalizeNameKey(b.name)
+
+    const mariaKey = normalizeNameKey("Мар’яна")
+
+    if (aKey === mariaKey) return -1
+    if (bKey === mariaKey) return 1
 
     return b.weeklyEarnings - a.weeklyEarnings
   })
 }
+
+
 
 
 
