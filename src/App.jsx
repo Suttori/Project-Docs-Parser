@@ -41,6 +41,7 @@ function extractTables(document) {
   return tables
 }
 
+
 function parseSchedule(table) {
   if (!table || table.length < 2) {
     return []
@@ -67,6 +68,42 @@ function parseSchedule(table) {
   // Пн-Пт
   const weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт']
 
+  // Нормализация имени.
+  // Приводит разные виды апострофов и пробелов к одному виду.
+
+function normalizeName(name) {
+  return name
+    .normalize('NFKC')
+    .replace(/[\u0027\u0060\u00B4\u02BC\u055A\u2018\u2019\u201B\u2032\uFF07]/g, "'")
+    .replace(/\u00A0/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLocaleLowerCase('uk-UA')
+}
+
+function normalizeNameKey(name) {
+  return name
+    .normalize('NFKC')
+    .replace(/[\u0027\u0060\u00B4\u02BC\u055A\u2018\u2019\u201B\u2032\uFF07]/g, "'")
+    .replace(/\u00A0/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLocaleLowerCase('uk-UA')
+}
+
+const personKey = normalizeNameKey(name)
+
+if (!people[personKey]) {
+  people[personKey] = {
+    name, // сохраняем оригинальное написание
+    days: {},
+    weeklyEarnings: 0,
+  }
+}
+
+
+
+
   // Пропускаем первую строку — это заголовки таблицы
   for (let rowIndex = 1; rowIndex < table.length; rowIndex++) {
     const row = table[rowIndex]
@@ -92,7 +129,11 @@ function parseSchedule(table) {
     const dayKey = `${dayName} ${date}`
 
     // Обрабатываем каждую смену
-    for (let columnIndex = 1; columnIndex < row.length; columnIndex++) {
+    for (
+      let columnIndex = 1;
+      columnIndex < row.length;
+      columnIndex++
+    ) {
       const cell = row[columnIndex] || ''
 
       if (!cell.trim()) {
@@ -121,6 +162,15 @@ function parseSchedule(table) {
         .filter(Boolean)
 
       for (const line of lines) {
+        /*
+          Примеры:
+
+          Мар’яна (335) TG+online
+          Мар'яна (335)
+          Мар’яна
+        */
+
+        // Сначала удаляем всё после ID сотрудника.
         // Из:
         // "Мар’яна (335) TG+online"
         //
@@ -131,19 +181,39 @@ function parseSchedule(table) {
         let name
 
         if (match) {
-          name = match[1].trim()
+          name = match[1]
         } else {
-          // Запасной вариант, если в строке нет (335)/(225)
-          name = line.trim()
+          name = line
         }
+
+        // Нормализуем имя
+        name = normalizeName(name)
 
         if (!name) {
           continue
         }
 
-        // Если человека ещё нет в объекте — создаём
-        if (!people[name]) {
-          people[name] = {
+        /*
+          Нормализованное имя используется как ключ.
+
+          Например:
+
+          Мар’яна
+          Мар'яна
+          Мар’яна
+          Мар’яна
+
+          после normalizeName() становятся:
+
+          Мар'яна
+
+          Поэтому они попадут в одного человека.
+        */
+        const personKey = name
+
+        // Если человека ещё нет — создаём
+        if (!people[personKey]) {
+          people[personKey] = {
             name,
             days: {},
             weeklyEarnings: 0,
@@ -151,8 +221,8 @@ function parseSchedule(table) {
         }
 
         // Если у человека ещё нет этого дня — создаём
-        if (!people[name].days[dayKey]) {
-          people[name].days[dayKey] = {
+        if (!people[personKey].days[dayKey]) {
+          people[personKey].days[dayKey] = {
             day: dayName,
             date,
             shifts: [],
@@ -161,27 +231,32 @@ function parseSchedule(table) {
         }
 
         // Добавляем смену
-        people[name].days[dayKey].shifts.push({
+        people[personKey].days[dayKey].shifts.push({
           shift: shiftName,
           earnings: rate,
         })
 
         // Добавляем деньги за день
-        people[name].days[dayKey].earnings += rate
+        people[personKey].days[dayKey].earnings += rate
 
         // Добавляем деньги за неделю
-        people[name].weeklyEarnings += rate
+        people[personKey].weeklyEarnings += rate
       }
     }
   }
 
+  // Сортировка:
+  // сначала Мар'яна, затем остальные по заработку
   return Object.values(people).sort((a, b) => {
-    if (a.name === 'Мар’яна') return -1
-    if (b.name === 'Мар’яна') return 1
+    if (a.name === "Мар'яна") return -1
+    if (b.name === "Мар'яна") return 1
 
     return b.weeklyEarnings - a.weeklyEarnings
   })
 }
+
+
+
 
 function formatMoney(amount) {
   return `${amount.toLocaleString('uk-UA')} грн`
