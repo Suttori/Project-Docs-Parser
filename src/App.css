@@ -295,25 +295,131 @@
 }
 
 @media (max-width: 600px) {
+  .app {
+    display: block;
+    padding: 20px 10px;
+  }
+
+  .container {
+    padding: 0;
+    max-width: 100%;
+  }
+
+  .header {
+    margin-bottom: 25px;
+  }
+
+  .header h1 {
+    font-size: 30px;
+    line-height: 1.15;
+  }
+
+  .header p {
+    font-size: 16px;
+  }
+
   .card {
-    padding: 20px;
+    padding: 16px;
+    border-radius: 12px;
   }
 
+  .input-row {
+    flex-direction: column;
+  }
+
+  .input-row button {
+    width: 100%;
+  }
+
+  .schedule-result {
+    margin-top: 25px;
+  }
+
+  .schedule-result h2 {
+    font-size: 24px;
+    margin-bottom: 16px;
+  }
+
+  /* Убираем горизонтальный скролл */
+  .schedule-table-wrapper {
+    overflow-x: visible;
+  }
+
+  /* На телефоне таблица превращается в список карточек */
   .schedule-table {
-    font-size: 13px;
+    display: block;
+    width: 100%;
+    font-size: 14px;
   }
 
-  .schedule-table th,
+  .schedule-table thead {
+    display: none;
+  }
+
+  .schedule-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .schedule-table tr {
+    display: block;
+    width: 100%;
+    margin-bottom: 20px;
+    padding: 16px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+  }
+
   .schedule-table td {
-    padding: 10px;
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: none;
+  }
+
+  .person-name {
+    min-width: 0;
+    margin-bottom: 14px;
+    font-size: 18px;
   }
 
   .person-days {
-    min-width: 260px;
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    gap: 10px;
+  }
+
+  .person-day {
+    width: 100%;
+    padding: 12px;
+    background: white;
   }
 
   .day-header {
-    flex-direction: column;
-    gap: 4px;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .day-header span {
+    white-space: normal;
+  }
+
+  .day-shifts {
+    gap: 6px;
+  }
+
+  .shift {
+    font-size: 13px;
+  }
+
+  .weekly-earnings {
+    min-width: 0;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 17px;
   }
 }

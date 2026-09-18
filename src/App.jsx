@@ -1,5 +1,6 @@
+
 import { useState } from 'react'
-import { GoogleLogin, useGoogleLogin } from '@react-oauth/google'
+import { useGoogleLogin } from '@react-oauth/google'
 import './App.css'
 
 function extractTables(document) {
@@ -175,21 +176,16 @@ function parseSchedule(table) {
   }
 
   return Object.values(people).sort((a, b) => {
-  if (a.name === "Мар’яна") return -1
-  if (b.name === "Мар’яна") return 1
+    if (a.name === 'Мар’яна') return -1
+    if (b.name === 'Мар’яна') return 1
 
-  return b.weeklyEarnings - a.weeklyEarnings
-})
+    return b.weeklyEarnings - a.weeklyEarnings
+  })
 }
-
-
-
 
 function formatMoney(amount) {
   return `${amount.toLocaleString('uk-UA')} грн`
 }
-
-
 
 function App() {
   const [url, setUrl] = useState('')
@@ -197,12 +193,13 @@ function App() {
   const [document, setDocument] = useState(null)
   const [error, setError] = useState('')
 
+  // Авторизация только для доступа к Google Docs.
+  // Отдельного GoogleLogin больше нет.
   const loginForDocs = useGoogleLogin({
     scope: 'https://www.googleapis.com/auth/documents.readonly',
 
     onSuccess: (tokenResponse) => {
       console.log('Google Docs access granted')
-      console.log(tokenResponse)
 
       setAccessToken(tokenResponse.access_token)
       setError('')
@@ -253,6 +250,7 @@ function App() {
 
       if (!response.ok) {
         const errorData = await response.json()
+
         console.error(errorData)
 
         throw new Error(
@@ -267,20 +265,23 @@ function App() {
 
       const tables = extractTables(data)
 
-console.log('Extracted tables:', tables)
+      console.log('Extracted tables:', tables)
 
-const schedule = parseSchedule(tables[0])
+      const schedule = parseSchedule(tables[0])
 
-console.log('Parsed schedule:', schedule)
+      console.log('Parsed schedule:', schedule)
 
-setDocument({
-  ...data,
-  extractedTables: tables,
-  schedule,
-})
+      setDocument({
+        ...data,
+        extractedTables: tables,
+        schedule,
+      })
     } catch (error) {
       console.error(error)
-      setError(error.message)
+
+      setError(
+        error.message || 'Произошла ошибка при загрузке документа'
+      )
     }
   }
 
@@ -330,18 +331,8 @@ setDocument({
           <div className="login-section">
 
             <p>
-              Войдите через Google, чтобы разрешить
-              чтение документов:
+              Разрешите приложению читать Google документы:
             </p>
-
-            <GoogleLogin
-              onSuccess={() => {
-                console.log('Google account login successful')
-              }}
-              onError={() => {
-                console.log('Google account login failed')
-              }}
-            />
 
             <button
               className="docs-access-button"
@@ -365,93 +356,121 @@ setDocument({
           )}
 
           {document && (
-  <div className="document-result">
+            <div className="document-result">
 
-    <h2>{document.title}</h2>
+              <h2>{document.title}</h2>
 
-    <p>Документ успешно загружен.</p>
+              <p>
+                Документ успешно загружен.
+              </p>
 
-    {document.schedule && document.schedule.length > 0 && (
-      <div className="schedule-result">
+              {document.schedule &&
+                document.schedule.length > 0 && (
 
-        <h2>Заработок сотрудников</h2>
+                <div className="schedule-result">
 
-        <div className="schedule-table-wrapper">
-          <table className="schedule-table">
+                  <h2>Заработок сотрудников</h2>
 
-            <thead>
-              <tr>
-                <th>Имя</th>
-                <th>Дни и смены</th>
-                <th>За неделю</th>
-              </tr>
-            </thead>
+                  <div className="schedule-table-wrapper">
 
-            <tbody>
-              {document.schedule.map((person) => (
-                <tr key={person.name}>
+                    <table className="schedule-table">
 
-                  <td className="person-name">
-                    {person.name}
-                  </td>
+                      <thead>
+                        <tr>
+                          <th>Имя</th>
+                          <th>Дни и смены</th>
+                          <th>За неделю</th>
+                        </tr>
+                      </thead>
 
-                  <td>
-                    <div className="person-days">
+                      <tbody>
 
-                      {Object.values(person.days).map((day) => (
-                        <div
-                          className="person-day"
-                          key={`${day.day}-${day.date}`}
-                        >
+                        {document.schedule.map((person) => (
+                          <tr key={person.name}>
 
-                          <div className="day-header">
-                            <strong>
-                              {day.day} {day.date}
-                            </strong>
+                            <td className="person-name">
+                              {person.name}
+                            </td>
 
-                            <span>
-                              {formatMoney(day.earnings)}
-                            </span>
-                          </div>
+                            <td>
+                              <div className="person-days">
 
-                          <div className="day-shifts">
-                            {day.shifts.map((shift, index) => (
-                              <div
-                                className="shift"
-                                key={`${shift.shift}-${index}`}
-                              >
-                                <span>{shift.shift}</span>
-                                <span>
-                                  {formatMoney(shift.earnings)}
-                                </span>
+                                {Object.values(person.days).map(
+                                  (day) => (
+                                    <div
+                                      className="person-day"
+                                      key={`${day.day}-${day.date}`}
+                                    >
+
+                                      <div className="day-header">
+
+                                        <strong>
+                                          {day.day} {day.date}
+                                        </strong>
+
+                                        <span>
+                                          {formatMoney(
+                                            day.earnings
+                                          )}
+                                        </span>
+
+                                      </div>
+
+                                      <div className="day-shifts">
+
+                                        {day.shifts.map(
+                                          (shift, index) => (
+                                            <div
+                                              className="shift"
+                                              key={`${shift.shift}-${index}`}
+                                            >
+
+                                              <span>
+                                                {shift.shift}
+                                              </span>
+
+                                              <span>
+                                                {formatMoney(
+                                                  shift.earnings
+                                                )}
+                                              </span>
+
+                                            </div>
+                                          )
+                                        )}
+
+                                      </div>
+
+                                    </div>
+                                  )
+                                )}
+
                               </div>
-                            ))}
-                          </div>
+                            </td>
 
-                        </div>
-                      ))}
+                            <td className="weekly-earnings">
+                              {formatMoney(
+                                person.weeklyEarnings
+                              )}
+                            </td>
 
-                    </div>
-                  </td>
+                          </tr>
+                        ))}
 
-                  <td className="weekly-earnings">
-                    {formatMoney(person.weeklyEarnings)}
-                  </td>
+                      </tbody>
 
-                </tr>
-              ))}
-            </tbody>
+                    </table>
 
-          </table>
-        </div>
+                  </div>
 
-      </div>
-    )}
+                </div>
+              )}
 
-  </div>
-)}
+            </div>
+          )}
 
         </main>
+
       </div>
     </div>
   )
